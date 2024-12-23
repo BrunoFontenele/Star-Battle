@@ -242,27 +242,75 @@ fecha(Tabuleiro, [H|T]):-
 
 % XII
 
-verificaVariaveis([]):- !.
+/*
+encontraSequencia(Tabuleiro, N, ListaCoords, Seq) é verdade se Tabuleiro for um tabuleiro, ListaCoords for uma lista 
+de coordenadas e N o tamanho de Seq, que é uma sublista de ListaCoords que verifica o seguinte:
+1) as suas coordenadas representam posições com variáveis;
+2) as suas coordenadas aparecem seguidas (numa linha, coluna ou região);
+3)Seq pode ser concatenada com duas listas, uma antes e uma depois, eventualmente vazias ou com pontos nas coordenadas respectivas,
+permitindo obter ListaCoords. De notar que se houver mais variáveis na sequência que N o predicado deve falhar.
 
-verificaVariaveis([H|T]):-
+
+A ordem dos predicados apresentados é indicado por um número, mostrando uma ordem de leitura recomendada para o entendimento do
+código.
+*/
+
+verificaVariaveis([]):- !. 
+    % Caso base. Se chegamos nesse ponto, significa que não existem mais variáveis livres além das que estão na sequência- (7)
+
+verificaVariaveis([H|T]):- % Vamos verificar se no resto do tabuleiro existe algum objeto que é uma variável livre. (6)
     not(var(H)),
     verificaVariaveis(T).
 
-encontraSequencia(Tabuleiro, N, ListaCoords, Seq):- 
-    objectosEmCoordenadas(ListaCoords, Tabuleiro, ListaObjs),
-    encontraSequencia(Tabuleiro, N, ListaCoords, Seq, ListaObjs, 0).
+encontraSequencia(Tabuleiro, N, ListaCoords, Seq):- % (1)
+    objectosEmCoordenadas(ListaCoords, Tabuleiro, ListaObjs), 
+    % Obtemos a lista de objetos e passamos para o predicado, assim não sendo necessário sempre repetir essa etapa.
+    encontraSequencia(Tabuleiro, N, ListaCoords, Seq, ListaObjs, 0). 
+    % Adicionamos a lista de objetos e um contador ao predicado.
 
 encontraSequencia(_, N, _, [], ListaObjs, N):- 
-    verificaVariaveis(ListaObjs), !.
+    % Caso o contador atinja o valor N, significa que achamos uma possível sequência válida. (4)
+    verificaVariaveis(ListaObjs), !. % Vamos verificar se ainda existe alguma variável livre no resto das coordenadas.
 
-encontraSequencia(_, _, [], _, [], _):- fail.
+encontraSequencia(_, _, [], _, [], _):- fail. 
+    % Caso as listas fiquem vazias e não tenhamos achado uma sequência válida, o predicado irá devolver um erro. (5)
 
-encontraSequencia(_, N, [Coord|T1], [Coord|Seq], [Obj|T], Contador):- 
-    var(Obj), 
-    Contador1 is Contador + 1,
-    encontraSequencia(_, N, T1, Seq, T, Contador1), !.
+encontraSequencia(_, N, [Coord|T1], [Coord|Seq], [Obj|T], Contador):- % Caso o objeto seja uma variável. (2)
+    % Percorremos a lista das coordenadas e dos objetos ao mesmo tempo. Adicionando as coordenadas a Seq.
+    var(Obj), % Verificamos se o objeto que estamos analisando é uma variável livre.
+    Contador1 is Contador + 1, % Se o anterior se verificar, adicionamos 1 ao contador.
+    encontraSequencia(_, N, T1, Seq, T, Contador1), !. % Continuamos o processo removendo a cabeça das listas.
 
-encontraSequencia(_, N, [_|T1], Seq, [Obj|T], _):- 
-    not(var(Obj)), 
-    Contador1 is 0,
-    encontraSequencia(_, N, T1, Seq, T, Contador1).
+encontraSequencia(_, N, [_|T1], Seq, [Obj|T], _):- % Caso o objeto não seja uma variável. (3)
+    not(var(Obj)), % Verificamos se objeto realmente não é uma variável.
+    Contador1 is 0, % Reiniciamos o contador.
+    encontraSequencia(_, N, T1, Seq, T, Contador1). % Continuamos o processo sem as cabeças.
+
+
+% XIII
+
+/*
+aplicaPadraoI(Tabuleiro, [(L1, C1), (L2, C2), (L3, C3)]), que é verdade se Tabuleiro for um tabuleiro e 
+[(L1, C1), (L2, C2), (L3, C3)] for uma lista de coordenadas (por exemplo, uma sequência calculada anteriormente). 
+Após a aplicação deste predicado, Tabuleiro será o resultado de colocar uma estrela (e) em (L1, C1) e (L3, C3) e os
+obrigatórios pontos (p) à volta de cada estrela.
+*/
+
+
+aplicaPadraoI(Tabuleiro, [(L1, C1), _, (L3, C3)]):- 
+    insereVariosObjectos([(L1, C1), (L3, C3)], Tabuleiro, [e, e]), % Inserimos as estrelas na coordenadas.
+    inserePontosVolta(Tabuleiro, (L1, C1)), % Adicionamos pontos a volta.
+    inserePontosVolta(Tabuleiro, (L3, C3)).
+
+
+% XIV
+
+/*
+aplicaPadroes(Tabuleiro, ListaListaCoords) que é verdade se Tabuleiro for um tabuleiro, ListaListaCoords for uma lista 
+de listas com coordenadas; após a aplicação deste predicado ter-se-ão encontrado sequências de tamanho 3 e 
+aplicado o aplicaPadraoI/2, ou então ter-se-ão encontrado sequências de tamanho 4 e aplicado o aplicaPadraoT/2.
+*/
+
+aplicaPadroes(Tabuleiro, ListaListaCoords):- 
+    aplicaPadraoI(Tabuleiro, ListaListaCoords),
+    aplicaPadraoT(Tabuleiro, ListaListaCoords).
