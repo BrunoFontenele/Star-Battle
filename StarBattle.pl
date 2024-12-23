@@ -240,3 +240,29 @@ fecha(Tabuleiro, [H|T]):-
     % Fazemos uma recursão aplicando fechaListaCoordenadas para cada lista de ListaListasCoord.
 
 
+% XII
+
+verificaVariaveis([]):- !.
+
+verificaVariaveis([H|T]):-
+    not(var(H)),
+    verificaVariaveis(T).
+
+encontraSequencia(Tabuleiro, N, ListaCoords, Seq):- 
+    objectosEmCoordenadas(ListaCoords, Tabuleiro, ListaObjs),
+    encontraSequencia(Tabuleiro, N, ListaCoords, Seq, ListaObjs, 0).
+
+encontraSequencia(_, N, _, [], ListaObjs, N):- 
+    verificaVariaveis(ListaObjs), !.
+
+encontraSequencia(_, _, [], _, [], _):- fail.
+
+encontraSequencia(_, N, [Coord|T1], [Coord|Seq], [Obj|T], Contador):- 
+    var(Obj), 
+    Contador1 is Contador + 1,
+    encontraSequencia(_, N, T1, Seq, T, Contador1), !.
+
+encontraSequencia(_, N, [_|T1], Seq, [Obj|T], _):- 
+    not(var(Obj)), 
+    Contador1 is 0,
+    encontraSequencia(_, N, T1, Seq, T, Contador1).
