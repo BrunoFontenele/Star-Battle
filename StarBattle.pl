@@ -1,13 +1,3 @@
-% lp24 - ist1113976 - projecto 
-:- use_module(library(clpfd)). % para poder usar transpose/2
-:- set_prolog_flag(answer_write_options,[max_depth(0)]). % ver listas completas
-:- [puzzles]. % Ficheiro dado. A avaliação terá mais puzzles.
-:- [codigoAuxiliar]. % Ficheiro dado. Não alterar.
-% Atenção: nao deves copiar nunca os puzzles para o teu ficheiro de código
-% Nao remover nem modificar as linhas anteriores. Obrigado.
-% Segue-se o código
-%%%%%%%%%%%%
-
 
 % 5.1
 % I 
@@ -266,25 +256,17 @@ A ordem dos predicados apresentados é indicado por um número, mostrando uma or
 código.
 */
 
-verificaVariaveis([]):- !. 
-    % Caso base. Se chegamos nesse ponto, significa que não existem mais variáveis livres além das que estão na sequência. (7)
 
-verificaVariaveis([H|T]):- % Vamos verificar se no resto do tabuleiro existe algum objeto que é uma variável livre. (6)
-    not(var(H)),
-    verificaVariaveis(T).
-
-encontraSequencia(Tabuleiro, N, ListaCoords, Seq):- % (1)
+encontraSequencia(Tabuleiro, N, ListaCoords, Seq):- % (1) 
+    coordObjectos(_, Tabuleiro, ListaCoords, _, Num),
+    Num =< N, Num > 0,
     objectosEmCoordenadas(ListaCoords, Tabuleiro, ListaObjs), 
     % Obtemos a lista de objetos e passamos para o predicado, assim não sendo necessário sempre repetir essa etapa.
     encontraSequencia(Tabuleiro, N, ListaCoords, Seq, ListaObjs, 0). 
     % Adicionamos a lista de objetos e um contador ao predicado.
 
-encontraSequencia(_, N, _, [], ListaObjs, N):- 
+encontraSequencia(_, N, _, [], ListaObjs, N):- !.
     % Caso o contador atinja o valor N, significa que achamos uma possível sequência válida. (4)
-    verificaVariaveis(ListaObjs), !. % Vamos verificar se ainda existe alguma variável livre no resto das coordenadas.
-
-encontraSequencia(_, _, [], _, [], _):- fail. 
-    % Caso as listas fiquem vazias e não tenhamos achado uma sequência válida, o predicado irá devolver um erro. (5)
 
 encontraSequencia(_, N, [Coord|T1], [Coord|Seq], [Obj|T], Contador):- % Caso o objeto seja uma variável. (2)
     % Percorremos a lista das coordenadas e dos objetos ao mesmo tempo. Adicionando as coordenadas a Seq.
@@ -292,10 +274,15 @@ encontraSequencia(_, N, [Coord|T1], [Coord|Seq], [Obj|T], Contador):- % Caso o o
     Contador1 is Contador + 1, % Se o anterior se verificar, adicionamos 1 ao contador.
     encontraSequencia(_, N, T1, Seq, T, Contador1), !. % Continuamos o processo removendo a cabeça das listas.
 
-encontraSequencia(_, N, [_|T1], Seq, [Obj|T], _):- % Caso o objeto não seja uma variável. (3)
-    not(var(Obj)), % Verificamos se objeto realmente não é uma variável.
-    Contador1 is 0, % Reiniciamos o contador.
-    encontraSequencia(_, N, T1, Seq, T, Contador1). % Continuamos o processo sem as cabeças.
+encontraSequencia(_, N, [Coord|T1], [Coord|Seq], [Obj|T], Contador):-
+    not(var(Obj)),
+    N == 0,
+    encontraSequencia(_, N, T1, Seq, T, Contador), !.
+
+encontraSequencia(_, N, _, _, [Obj|_], _):-
+    not(var(Obj)),
+    N \== 0,
+    fail.
 
 
 % XIII
@@ -308,7 +295,7 @@ obrigatórios pontos (p) à volta de cada estrela.
 */
 
 
-aplicaPadraoI(Tabuleiro, [(L1, C1), (L2, C2), (L3, C3)]):- 
+aplicaPadraoI(Tabuleiro, [(L1, C1), _, (L3, C3)]):- 
     insereVariosObjectos([(L1, C1), (L3, C3)], Tabuleiro, [e, e]), % Inserimos as estrelas na coordenadas.
     inserePontosVolta(Tabuleiro, (L1, C1)), % Adicionamos pontos a volta.
     inserePontosVolta(Tabuleiro, (L3, C3)).
@@ -325,8 +312,10 @@ aplicado o aplicaPadraoI/2, ou então ter-se-ão encontrado sequências de taman
 aplicaPadroes(_, []):- !.
 
 aplicaPadroes(Tabuleiro, [H|ListaListaCoords]):-
-    (encontraSequencia(Tabuleiro, 3, H, SeqI), aplicaPadraoI(Tabuleiro, SeqI);
-    encontraSequencia(Tabuleiro, 4, H, SeqT), aplicaPadraoT(Tabuleiro, SeqT)),
+    (encontraSequencia(Tabuleiro, 3, H, SeqI), coordObjectos(_, Tabuleiro, H, _, NumObjectos), NumObjectos == 3,
+    aplicaPadraoI(Tabuleiro, SeqI);
+    encontraSequencia(Tabuleiro, 4, H, SeqT), coordObjectos(_, Tabuleiro, H, _, NumObjectos), NumObjectos == 4, 
+    aplicaPadraoT(Tabuleiro, SeqT)),
     aplicaPadroes(Tabuleiro, ListaListaCoords), !.
     
 aplicaPadroes(Tabuleiro, [_|ListaListaCoords]):-
@@ -342,14 +331,14 @@ os predicados aplicaPadroes/2 e fecha/2 até já não haver mais alterações na
 fecha_Tabuleiro(Tabuleiro, _, Tabuleiro, 1):- !.
 
 fecha_Tabuleiro(Tabuleiro, CT, Tabuleiro_Final, 0):-
-    copy_term(Tabuleiro, Tabuleiro_Final),
+    Tabuleiro_Final = Tabuleiro,
     aplicaPadroes(Tabuleiro, CT),
     fecha(Tabuleiro, CT),
     Tabuleiro_Final == Tabuleiro,
     fecha_Tabuleiro(Tabuleiro, CT, Tabuleiro_Final, 1), !.
 
 fecha_Tabuleiro(Tabuleiro, CT, Tabuleiro_Final, 0):-
-    copy_term(Tabuleiro, Tabuleiro_Final),
+    Tabuleiro_Final = Tabuleiro,
     aplicaPadroes(Tabuleiro, CT),
     fecha(Tabuleiro, CT),
     not(Tabuleiro_Final == Tabuleiro),
@@ -364,4 +353,4 @@ resolve(Estrutura, Tabuleiro):-
 teste(Estrutura, Tabuleiro):-
     coordTodas(Estrutura, CT),
     aplicaPadroes(Tabuleiro, CT),
-    fecha(Tabuleiro, CT)
+    fecha(Tabuleiro, CT).
