@@ -1,3 +1,12 @@
+% lp24 - ist1113976 - projecto 
+:- use_module(library(clpfd)). % para poder usar transpose/2
+:- set_prolog_flag(answer_write_options,[max_depth(0)]). % ver listas completas
+:- [puzzles]. % Ficheiro dado. A avaliação terá mais puzzles.
+:- [codigoAuxiliar]. % Ficheiro dado. Não alterar.
+% Atenção: nao deves copiar nunca os puzzles para o teu ficheiro de código
+% Nao remover nem modificar as linhas anteriores. Obrigado.
+% Segue-se o código
+%%%%%%%%%%%%
 
 
 % 5.1
@@ -115,8 +124,8 @@ inserePontos(Tabuleiro, [Coord|ListaCoord]):-
 
 /*
 objectosEmCoordenadas(ListaCoords, Tabuleiro, ListaObjs) é verdade se ListaObjs for a lista de objectos 
-(pontos, estrelas ou variáveis) das coordenadas ListaCoords no tabuleiro Tabuleiro, apresentados na mesma 
-ordem das coordenadas. Neste caso, o predicado deve falhar se alguma coordenada não pertencer ao tabuleiro.
+(pontos, estrelas ou variáveis) das coordenadas ListaCoords no tabuleiro Tabuleiro, apresentados na mesma ordem das coordenadas. 
+Neste caso, o predicado deve falhar se alguma coordenada não pertencer ao tabuleiro.
 */
 
 objectosEmCoordenadas([], _, []):- !. % Caso base.
@@ -134,6 +143,8 @@ coordObjectos(Objecto, Tabuleiro, ListaCoords, ListaCoordObjs, NumObjectos) é v
 Listacoords uma lista de coordenadas e ListaCoordObjs a sublista de ListaCoords que contém as coordenadas dos objectos do tipo
 Objecto, tal como ocorrem no tabuleiro (o comportamento deverá ser o mesmo se o objecto pesquisado for uma variável). 
 NumObjectos é o número de objectos Objecto encontrados. ListaCoordsObjs é ordenado por linha e coluna.
+
+igual_Elem
 */
 
 igual_Elem(Tabuleiro, Objecto, Coord):-
@@ -256,7 +267,7 @@ código.
 */
 
 verificaVariaveis([]):- !. 
-    % Caso base. Se chegamos nesse ponto, significa que não existem mais variáveis livres além das que estão na sequência- (7)
+    % Caso base. Se chegamos nesse ponto, significa que não existem mais variáveis livres além das que estão na sequência. (7)
 
 verificaVariaveis([H|T]):- % Vamos verificar se no resto do tabuleiro existe algum objeto que é uma variável livre. (6)
     not(var(H)),
@@ -297,7 +308,7 @@ obrigatórios pontos (p) à volta de cada estrela.
 */
 
 
-aplicaPadraoI(Tabuleiro, [(L1, C1), _, (L3, C3)]):- 
+aplicaPadraoI(Tabuleiro, [(L1, C1), (L2, C2), (L3, C3)]):- 
     insereVariosObjectos([(L1, C1), (L3, C3)], Tabuleiro, [e, e]), % Inserimos as estrelas na coordenadas.
     inserePontosVolta(Tabuleiro, (L1, C1)), % Adicionamos pontos a volta.
     inserePontosVolta(Tabuleiro, (L3, C3)).
@@ -311,6 +322,46 @@ de listas com coordenadas; após a aplicação deste predicado ter-se-ão encont
 aplicado o aplicaPadraoI/2, ou então ter-se-ão encontrado sequências de tamanho 4 e aplicado o aplicaPadraoT/2.
 */
 
-aplicaPadroes(Tabuleiro, ListaListaCoords):- 
-    aplicaPadraoI(Tabuleiro, ListaListaCoords),
-    aplicaPadraoT(Tabuleiro, ListaListaCoords).
+aplicaPadroes(_, []):- !.
+
+aplicaPadroes(Tabuleiro, [H|ListaListaCoords]):-
+    (encontraSequencia(Tabuleiro, 3, H, SeqI), aplicaPadraoI(Tabuleiro, SeqI);
+    encontraSequencia(Tabuleiro, 4, H, SeqT), aplicaPadraoT(Tabuleiro, SeqT)),
+    aplicaPadroes(Tabuleiro, ListaListaCoords), !.
+    
+aplicaPadroes(Tabuleiro, [_|ListaListaCoords]):-
+    aplicaPadroes(Tabuleiro, ListaListaCoords).
+
+% XV
+
+/*
+resolve(Estruturas, Tabuleiro) é verdade se Estrutura for uma estrutura e Tabuleiro for um tabuleiro que resulta de aplicar 
+os predicados aplicaPadroes/2 e fecha/2 até já não haver mais alterações nas variáveis do tabuleiro.
+*/
+
+fecha_Tabuleiro(Tabuleiro, _, Tabuleiro, 1):- !.
+
+fecha_Tabuleiro(Tabuleiro, CT, Tabuleiro_Final, 0):-
+    copy_term(Tabuleiro, Tabuleiro_Final),
+    aplicaPadroes(Tabuleiro, CT),
+    fecha(Tabuleiro, CT),
+    Tabuleiro_Final == Tabuleiro,
+    fecha_Tabuleiro(Tabuleiro, CT, Tabuleiro_Final, 1), !.
+
+fecha_Tabuleiro(Tabuleiro, CT, Tabuleiro_Final, 0):-
+    copy_term(Tabuleiro, Tabuleiro_Final),
+    aplicaPadroes(Tabuleiro, CT),
+    fecha(Tabuleiro, CT),
+    not(Tabuleiro_Final == Tabuleiro),
+    fecha_Tabuleiro(Tabuleiro, CT, Tabuleiro_Final, 0).
+
+resolve(Estrutura, Tabuleiro):-
+    coordTodas(Estrutura, CT),
+    aplicaPadroes(Tabuleiro, CT),
+    fecha(Tabuleiro, CT),
+    fecha_Tabuleiro(Tabuleiro, CT, Tabuleiro_Final, 0).
+
+teste(Estrutura, Tabuleiro):-
+    coordTodas(Estrutura, CT),
+    aplicaPadroes(Tabuleiro, CT),
+    fecha(Tabuleiro, CT)
