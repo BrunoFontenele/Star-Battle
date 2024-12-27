@@ -9,9 +9,9 @@ da lista Lista linha por linha.
 
 visualiza([]):- !. % Caso base.
 
-visualiza([H|Lista]):- % Separamos cabeça da Lista para executar a recursão.
-    writeln(H), 
-    visualiza(Lista).
+visualiza([Elemento|Lista]):- % Separamos cabeça da Lista para executar a recursão.
+    writeln(Elemento), % Escrevemos o elemento e saltamos para a linha de baixo.
+    visualiza(Lista). 
 
 
 % II
@@ -156,7 +156,7 @@ coordenadasVars(Tabuleiro, ListaVars) é verdade se ListaVars forem as coordenad
 ListaVars está organizado por linhas e colunas.
 */
 
-% O coordLinhas2 é quase igual ao auxiliar, apenas adicionando todas as coordenadas num lista sem separação.
+% O coordLinhas2 é quase igual ao auxiliar, apenas adicionando todas as coordenadas numa lista sem separação.
 
 coordLinhas2(Num, CoordLinhas) :-  
     coordLinhas2(Num, CoordLinhas, 1, []). 
@@ -256,16 +256,16 @@ A ordem dos predicados apresentados é indicado por um número, mostrando uma or
 código.
 */
 
-
 encontraSequencia(Tabuleiro, N, ListaCoords, Seq):- % (1) 
     coordObjectos(_, Tabuleiro, ListaCoords, _, Num),
-    Num =< N, Num > 0,
+    coordObjectos(e, Tabuleiro, ListaCoords, _, Num_Estrelas),
+    Num == N, Num_Estrelas == 0,
     objectosEmCoordenadas(ListaCoords, Tabuleiro, ListaObjs), 
     % Obtemos a lista de objetos e passamos para o predicado, assim não sendo necessário sempre repetir essa etapa.
     encontraSequencia(Tabuleiro, N, ListaCoords, Seq, ListaObjs, 0). 
     % Adicionamos a lista de objetos e um contador ao predicado.
 
-encontraSequencia(_, N, _, [], ListaObjs, N):- !.
+encontraSequencia(_, N, _, [], _, N):- !.
     % Caso o contador atinja o valor N, significa que achamos uma possível sequência válida. (4)
 
 encontraSequencia(_, N, [Coord|T1], [Coord|Seq], [Obj|T], Contador):- % Caso o objeto seja uma variável. (2)
@@ -274,14 +274,14 @@ encontraSequencia(_, N, [Coord|T1], [Coord|Seq], [Obj|T], Contador):- % Caso o o
     Contador1 is Contador + 1, % Se o anterior se verificar, adicionamos 1 ao contador.
     encontraSequencia(_, N, T1, Seq, T, Contador1), !. % Continuamos o processo removendo a cabeça das listas.
 
-encontraSequencia(_, N, [Coord|T1], [Coord|Seq], [Obj|T], Contador):-
+encontraSequencia(_, N, [_|T1], Seq, [Obj|T], Contador):-
     not(var(Obj)),
-    N == 0,
+    Contador == 0,
     encontraSequencia(_, N, T1, Seq, T, Contador), !.
 
-encontraSequencia(_, N, _, _, [Obj|_], _):-
+encontraSequencia(_, _, _, _, [Obj|_], Contador):-
     not(var(Obj)),
-    N \== 0,
+    Contador \== 0,
     fail.
 
 
@@ -312,12 +312,10 @@ aplicado o aplicaPadraoI/2, ou então ter-se-ão encontrado sequências de taman
 aplicaPadroes(_, []):- !.
 
 aplicaPadroes(Tabuleiro, [H|ListaListaCoords]):-
-    (encontraSequencia(Tabuleiro, 3, H, SeqI), coordObjectos(_, Tabuleiro, H, _, NumObjectos), NumObjectos == 3,
-    aplicaPadraoI(Tabuleiro, SeqI);
-    encontraSequencia(Tabuleiro, 4, H, SeqT), coordObjectos(_, Tabuleiro, H, _, NumObjectos), NumObjectos == 4, 
-    aplicaPadraoT(Tabuleiro, SeqT)),
+    (encontraSequencia(Tabuleiro, 3, H, SeqI), aplicaPadraoI(Tabuleiro, SeqI);
+    encontraSequencia(Tabuleiro, 4, H, SeqT), aplicaPadraoT(Tabuleiro, SeqT)),
     aplicaPadroes(Tabuleiro, ListaListaCoords), !.
-    
+
 aplicaPadroes(Tabuleiro, [_|ListaListaCoords]):-
     aplicaPadroes(Tabuleiro, ListaListaCoords).
 
@@ -328,27 +326,25 @@ resolve(Estruturas, Tabuleiro) é verdade se Estrutura for uma estrutura e Tabul
 os predicados aplicaPadroes/2 e fecha/2 até já não haver mais alterações nas variáveis do tabuleiro.
 */
 
-fecha_Tabuleiro(Tabuleiro, _, Tabuleiro, 1):- !.
+fecha_Tabuleiro(_, _, 1):- !.
 
-fecha_Tabuleiro(Tabuleiro, CT, Tabuleiro_Final, 0):-
-    Tabuleiro_Final = Tabuleiro,
+fecha_Tabuleiro(Tabuleiro, CT, 0):-
+    copy_term(Tabuleiro, Tabuleiro_Final),
     aplicaPadroes(Tabuleiro, CT),
     fecha(Tabuleiro, CT),
-    Tabuleiro_Final == Tabuleiro,
-    fecha_Tabuleiro(Tabuleiro, CT, Tabuleiro_Final, 1), !.
+    Tabuleiro_Final =@= Tabuleiro,
+    fecha_Tabuleiro(Tabuleiro, CT, 1), !.
 
-fecha_Tabuleiro(Tabuleiro, CT, Tabuleiro_Final, 0):-
-    Tabuleiro_Final = Tabuleiro,
+fecha_Tabuleiro(Tabuleiro, CT, 0):-
     aplicaPadroes(Tabuleiro, CT),
     fecha(Tabuleiro, CT),
-    not(Tabuleiro_Final == Tabuleiro),
-    fecha_Tabuleiro(Tabuleiro, CT, Tabuleiro_Final, 0).
+    fecha_Tabuleiro(Tabuleiro, CT, 0).
 
 resolve(Estrutura, Tabuleiro):-
     coordTodas(Estrutura, CT),
     aplicaPadroes(Tabuleiro, CT),
     fecha(Tabuleiro, CT),
-    fecha_Tabuleiro(Tabuleiro, CT, Tabuleiro_Final, 0).
+    fecha_Tabuleiro(Tabuleiro, CT, 0).
 
 teste(Estrutura, Tabuleiro):-
     coordTodas(Estrutura, CT),
