@@ -39,17 +39,9 @@ visualizaLinha([Elemento|Lista], Contador):-
 
 /* 
 insereObjecto((L, C), Tabuleiro, Obj) é verdade se Tabuleiro é um tabuleiro que após a aplicação deste predicado 
-passa a ter o objecto "Obj" nas coordenadas "(L, C)", caso nestas se encontre uma variável. O predicado não deve falhar, 
+passa a ter o objecto "Obj" nas coordenadas "(L, C)", caso nestas se encontre uma variável. O predicado não deve falhar,
 mesmo se as coordenadas não fizerem parte do tabuleiro ou se já existir um objecto nas coordenas dadas.
 */
-
-insereObjecto((L,_), Tabuleiro, _):- 
-    length(Tabuleiro, Tamanho), % Descobrindo quantas linhas temos no tabuleiro.
-     (0>=L; L>Tamanho), !. % Se a linha não fizer parte do tabuleiro apenas paramos e não falhamos.
-
-insereObjecto((_,C), [H|_], _):- 
-    length(H, Tamanho), % Descobrindo quantas colunas temos no tabuleiro.
-    (0>=C; C>Tamanho), !. % Se a coluna não fizer parte do tabuleiro apenas paramos e não falhamos.
 
 insereObjecto((L,C), Tabuleiro, Obj):-
      nth1(L, Tabuleiro, Linha), % Designamos Linha como a linha na coordenada dada.
@@ -59,7 +51,9 @@ insereObjecto((L,C), Tabuleiro, Obj):-
 insereObjecto((L,C), Tabuleiro, Obj):- % Caso já exista um objeto na coordenada.
      nth1(L, Tabuleiro, Linha), 
      nth1(C, Linha, Elemento), 
-     not(Elemento = Obj). 
+     not(Elemento = Obj), !.
+
+insereObjecto(_, _, _).
 
 
 % IV
@@ -141,7 +135,8 @@ o objecto na coordenada Coord é igual a Objecto.
 */
 
 igual_Elem(Tabuleiro, Objecto, Coord):-
-    objectosEmCoordenadas([Coord], Tabuleiro, Obj_Coord), % Usamos objectosEmCoordenadas para obter o objeto nessa coordenada.
+    objectosEmCoordenadas([Coord], Tabuleiro, Obj_Coord),
+    % Usamos objectosEmCoordenadas para obter o objeto nessa coordenada.
     nth1(1, Obj_Coord, Elem), % Retiramos o Elemento da lista para fazer a comparação a seguir.
     Objecto =@= Elem. % Comparamos o Elemento encontrado com o Objecto recebido, apenas comparando a estrutura de ambos.
 
@@ -158,14 +153,15 @@ coordObjectos(Objecto, Tabuleiro, ListaCoords, LCO, Num):-
 coordenadasVars(Tabuleiro, ListaVars) é verdade se ListaVars forem as coordenadas das variáveis do tabuleiro Tabuleiro. 
 ListaVars está organizado por linhas e colunas.
 
-coordLinhasMod(Num, CoordLinhas) é muito similar ao predicado CoordLinhas no Código Auxiliar, apenas com a diferença de que
-as coordenadas não estão separadas, todas estão apenas numa grande lista, sendo separadas por vírgulas.
+coordLinhasMod(Num, CoordLinhas) é muito similar ao predicado CoordLinhas no Código Auxiliar, apenas com a diferença
+de que as coordenadas não estão separadas, todas estão apenas numa grande lista, sendo separadas por vírgulas.
 */
 
 coordLinhasMod(Num, CoordLinhas) :-  
     coordLinhasMod(Num, CoordLinhas, 1, []). 
 
 coordLinhasMod(Num, CoordLinhas, N, CoordLinhas) :- N > Num, !.    
+
 coordLinhasMod(Num, CoordLinhas, N, Aux) :-  
     findall((N, C), between(1, Num, C), CoordLinhaN),
     append(Aux, CoordLinhaN, NovoAux), % A única diferença se encontra nessa linha.
@@ -175,22 +171,25 @@ coordLinhasMod(Num, CoordLinhas, N, Aux) :-
 coordenadasVars(Tabuleiro, ListaVars):- 
     length(Tabuleiro, TamanhoLinha), % Verificamos qual a proporção do tabuleiro.
     coordLinhasMod(TamanhoLinha, CoordLinhas), % Criamos uma lista com todas as coordenadas do tabuleiro.
-    coordObjectos(_, Tabuleiro, CoordLinhas, ListaVars, _). % Verfiicamos qual das coordenadas do tabuleiro tem uma variável livre.
+    coordObjectos(_, Tabuleiro, CoordLinhas, ListaVars, _). 
+    % Verfiicamos qual das coordenadas do tabuleiro tem uma variável livre.
 
 % X
 
 /*
-fechaListaCoordenadas(Tabuleiro, ListaCoord) que é verdade se Tabuleiro for um tabuleiro e ListaCoord for uma lista de coordenadas; 
-após a aplicação deste predicado, as coordenadas de ListaCoord deverão ser apenas estrelas e pontos, considerando as hipóteses:
+fechaListaCoordenadas(Tabuleiro, ListaCoord) que é verdade se Tabuleiro for um tabuleiro e ListaCoord 
+for uma lista de coordenadas; após a aplicação deste predicado, as coordenadas de ListaCoord deverão
+ser apenas estrelas e pontos, considerando as hipóteses:
 
 h1: sempre que a linha, coluna ou região associada à lista de coordenadas tiver 2 duas estrelas, 
 enche as restantes coordenadas de pontos;
 
-h2: sempre que a linha, coluna ou região associada à lista de coordenadas tiver uma única estrela e uma única posição livre,
-insere uma estrela na posição livre e insere pontos à volta da estrela;
+h2: sempre que a linha, coluna ou região associada à lista de coordenadas tiver uma única estrela e 
+uma única posição livre, insere uma estrela na posição livre e insere pontos à volta da estrela;
 
-h3: sempre que a linha, coluna ou região associada à lista de coordenadas não tiver nenhuma estrela e tiver duas únicas posições 
-livres, insere uma estrela em cada posição livre e insere pontos à volta de cada estrela inserida;
+h3: sempre que a linha, coluna ou região associada à lista de coordenadas não tiver nenhuma estrela 
+e tiver duas únicas posições livres, insere uma estrela em cada posição livre
+e insere pontos à volta de cada estrela inserida;
 
 Se nenhuma das hipóteses se verificar, o tabuleiro mantém-se inalterável (o predicado não falha).
 */
@@ -209,7 +208,8 @@ fechaListaCoordenadas(Tabuleiro, ListaCoord):-
     length(Estrelas, 1), % Verificamos se só é uma estrela.
     coordObjectos(_, Tabuleiro, ListaCoord, ListaVars, _), % Encontramos a coordenada da posição livre.
     length(ListaVars, 1), % Verificamos se só é uma posição livre.
-    ListaVars = [(L, C)], % Unificamos L e C com as coordenadas para removermos a lista, assim podemos utilizar L e C a seguir.
+    ListaVars = [(L, C)], 
+    % Unificamos L e C com as coordenadas para removermos a lista, assim podemos utilizar L e C a seguir.
     insereObjecto((L, C), Tabuleiro, e), % Inserimos a estrela na posição livre.
     inserePontosVolta(Tabuleiro, (L,C)), !. % Inserimos pontos em volta da nova estrela.
 
@@ -231,9 +231,9 @@ fechaListaCoordenadas(_, _). % Caso nenhuma das hipóteses se verificar.
 % XI
 
 /*
-fecha(Tabuleiro, ListaListasCoord) que é verdade se Tabuleiro for um tabuleiro e ListaListasCoord for uma lista de listas 
-de coordenadas. Após a aplicação deste predicado, Tabuleiro será o resultado de aplicar o predicado anterior
-a cada lista de coordenadas.
+fecha(Tabuleiro, ListaListasCoord) que é verdade se Tabuleiro for um tabuleiro e ListaListasCoord 
+for uma lista de listas de coordenadas. Após a aplicação deste predicado, 
+Tabuleiro será o resultado de aplicar o predicado anterior a cada lista de coordenadas.
 */
 
 fecha(_, []):- !. % Caso base.
@@ -251,12 +251,13 @@ encontraSequencia(Tabuleiro, N, ListaCoords, Seq) é verdade se Tabuleiro for um
 de coordenadas e N o tamanho de Seq, que é uma sublista de ListaCoords que verifica o seguinte:
 1) as suas coordenadas representam posições com variáveis;
 2) as suas coordenadas aparecem seguidas (numa linha, coluna ou região);
-3)Seq pode ser concatenada com duas listas, uma antes e uma depois, eventualmente vazias ou com pontos nas coordenadas respectivas,
+3) Seq pode ser concatenada com duas listas, uma antes e uma depois, 
+eventualmente vazias ou com pontos nas coordenadas respectivas,
 permitindo obter ListaCoords. De notar que se houver mais variáveis na sequência que N o predicado deve falhar.
 
 
-A ordem dos predicados apresentados é indicado por um número, mostrando uma ordem de leitura recomendada para o entendimento do
-código.
+A ordem recomendada de leitura dos predicados é indicada por um número ao lado, como "(1)". 
+Essa ordem não precisa ser necessariamente seguida, apenas facilita o entendimento do predicado.
 */
 
 encontraSequencia(Tabuleiro, N, ListaCoords, Seq):- % (1) 
@@ -330,8 +331,9 @@ aplicaPadroes(Tabuleiro, [_|ListaListaCoords]):- % Caso não achemos nenhuma seq
 % XV
 
 /*
-resolve(Estruturas, Tabuleiro) é verdade se Estrutura for uma estrutura e Tabuleiro for um tabuleiro que resulta de aplicar 
-os predicados aplicaPadroes/2 e fecha/2 até já não haver mais alterações nas variáveis do tabuleiro.
+resolve(Estruturas, Tabuleiro) é verdade se Estrutura for uma estrutura e 
+Tabuleiro for um tabuleiro que resulta de aplicar os predicados aplicaPadroes/2 e fecha/2 
+até já não haver mais alterações nas variáveis do tabuleiro.
 
 Esse predicado utiliza quase como "chaves" para os predicados. O processo apenas entrará em alguns predicados quando
 tiver um certo valor na última parte do predicado. 
